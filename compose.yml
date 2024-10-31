@@ -1,0 +1,53 @@
+services:
+
+
+  db:
+    image: mysql:8.0.40
+    container_name: symfony_db
+    environment:
+      MYSQL_ROOT_PASSWORD: s3cr3t
+      MYSQL_DATABASE: BIBLIO
+      MYSQL_USER: nadir
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - symfony_network
+    healthcheck:
+      test: "exit 0"
+  web:
+    image: nginx:alpine
+    container_name: symfony_web
+    restart: always
+    volumes:
+      - .:/var/www/html
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - "8080:80"
+    networks:
+      - symfony_network
+    depends_on:
+      - app
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+    container_name: symfony_app
+    restart: always
+    environment:
+      DATABASE_URL: "mysql://nadir:secret@db:3306/BIBLIO"
+    networks:
+      - symfony_network
+    depends_on:
+      db:
+        condition: service_healthy
+networks:
+  symfony_network:
+    driver: bridge
+
+volumes:
+  db_data:
